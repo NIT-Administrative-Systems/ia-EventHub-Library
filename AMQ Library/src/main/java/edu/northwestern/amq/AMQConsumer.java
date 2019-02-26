@@ -13,6 +13,7 @@ import javax.ws.rs.core.Response.Status.Family;
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.Unmarshaller;
 
+import org.apache.http.Header;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.config.RequestConfig;
@@ -57,7 +58,7 @@ public class AMQConsumer {
 	private int maxMessages = DEFAULT_MAX_MESSAGES;
 	private MediaType accept = MediaType.APPLICATION_JSON_TYPE;
 	private boolean includeMetaData = DEFAULT_INCLUDE_METADATA;
-	private boolean autoAcknowledge = DEFAULT_AUTO_ACKNOWLEDGE;;
+	private boolean autoAcknowledge = DEFAULT_AUTO_ACKNOWLEDGE;
 	private int maxFailures = DEFAULT_MAX_FAILURE_COUNT;
 	private long sleepDuration = DEFAULT_SLEEP_DURATION;
 	private HttpClient httpClient = null;
@@ -337,7 +338,15 @@ public class AMQConsumer {
 							List<Message> messages = new ArrayList<Message>();
 							messages.add(message);
 	
+							Header additionalMsg = getResponse.getFirstHeader("x-has-additional-message");
+							boolean hasAdditionalMessage = false;
+
+							if(additionalMsg != null) {
+								hasAdditionalMessage = Boolean.parseBoolean(additionalMsg.getValue());
+							}
+
 							messageResult.setMessages(messages);
+							messageResult.hasAdditionalMessage(hasAdditionalMessage);
 						}
 						messageId = messageResult.getLastMessageId();
 					}
@@ -461,6 +470,7 @@ public class AMQConsumer {
 	}
 	
 	public AcknowledgeResult acknowledgeAsPoison() throws InterruptedException, IllegalStateException {
+		logger.trace("Entering acknowledgeAsPoison, messageID = {}", messageId);
 
 		if(messageId != null) {
 			AcknowledgeResult ackResult = new AcknowledgeResult();
