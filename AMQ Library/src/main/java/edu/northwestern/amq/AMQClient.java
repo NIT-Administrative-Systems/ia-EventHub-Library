@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory;
 
 public class AMQClient {
 
+	protected static final String MESSAGE_ID_HEADER_NAME = "x-message-id";
 	private static final int DEFAULT_MAX_FAILURE_COUNT = 10;
 	protected static final long DEFAULT_SLEEP_DURATION = 1000;
 	protected static final Logger logger = LoggerFactory.getLogger("logger");
