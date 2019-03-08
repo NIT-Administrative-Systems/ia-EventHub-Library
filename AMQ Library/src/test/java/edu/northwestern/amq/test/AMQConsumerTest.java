@@ -11,13 +11,12 @@ import edu.northwestern.amq.MessageResult;
 public class AMQConsumerTest {
 
 	private AMQConsumer amqConsumer = null;
-	
+	private static String topic = System.getProperty("edu.northwestern.topic");
+	private static String apiKey = System.getProperty("edu.northwestern.apikey");
+	private static String env = System.getProperty("edu.northwestern.env");
+
 	private void createConsumer() {
 		if(amqConsumer == null) {
-			String topic = System.getProperty("edu.northwestern.topic");
-			String apiKey = System.getProperty("edu.northwestern.apikey");
-			String env = System.getProperty("edu.northwestern.env");
-			
 			amqConsumer = AMQConsumer.ConsumerBuilder
 					.create()
 					.setEnv(env)
@@ -28,21 +27,17 @@ public class AMQConsumerTest {
 	}
 
 	@Test
-	public void getMessage() {
-		try {
-			createConsumer();
+	public void getMessage() throws Exception {
+		createConsumer();
 
-			MessageResult messageResult = amqConsumer.getMessage();
-			
-			Assert.assertNotNull("MessageResult should not be null", messageResult);
+		//Test getting a message
+		MessageResult messageResult = amqConsumer.getMessage();
+		Assert.assertNotNull("MessageResult should not be null", messageResult);
 
-			AcknowledgeResult ackResult = amqConsumer.acknowledgeMessage();
+		//Test acknowledging the message
+		AcknowledgeResult ackResult = amqConsumer.acknowledgeMessage();
 
-			Assert.assertTrue("Message was not Acknowledged", ackResult.isSuccess());
-		}
-		catch(Exception e) {
-			System.out.println("Error");
-		}
+		Assert.assertTrue("Message was not Acknowledged", ackResult.isSuccess());
 	}
 	
 	@Test(expected = RuntimeException.class)
@@ -52,16 +47,30 @@ public class AMQConsumerTest {
 		amqConsumer.acknowledgeMessage();
 	}
 
-//	@Test
-//	public void sentryTest() throws Exception {
-//		Sentry.init("https://be17fdb221094feca88a31a4956ad635@sentry.io/1316346");
-//
-//		try {
-//			throw new NullPointerException("This is a test exception");
-//		}
-//		catch(Exception e) {
-//			Sentry.capture(e);
-//		}
-//		
-//	}
+	@Test(expected = IllegalArgumentException.class)
+	public void noAPIKey() {
+		AMQConsumer.ConsumerBuilder
+			.create()
+			.setEnv(env)
+			.setTopic(topic)
+			.build();
+	}
+
+	@Test(expected = IllegalArgumentException.class)
+	public void noEnv() {
+		AMQConsumer.ConsumerBuilder
+			.create()
+			.setAPIKey(apiKey)
+			.setTopic(topic)
+			.build();
+	}
+	
+	@Test(expected = IllegalArgumentException.class)
+	public void noTopic() {
+		AMQConsumer.ConsumerBuilder
+			.create()
+			.setEnv(env)
+			.setAPIKey(apiKey)
+			.build();
+	}
 }
