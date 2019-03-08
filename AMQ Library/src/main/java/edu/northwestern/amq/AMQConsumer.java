@@ -30,13 +30,14 @@ import org.slf4j.LoggerFactory;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+
 /**
  * This represents the actions that can be taken by a consumer against a Queue.
  * 
  * @author bab4379
  *
  */
-public class AMQConsumer {
+public class AMQConsumer extends AMQClient {
 
 	private static final int NO_MESSAGE_STATUS_CODE = Status.NO_CONTENT.getStatusCode();
 	private static final int DEFAULT_MAX_FAILURE_COUNT = 10;
@@ -64,46 +65,6 @@ public class AMQConsumer {
 	private HttpClient httpClient = null;
 	
 	private String messageId = null;
-
-	public enum Environment {
-	       /**
-         * 200 OK, see {@link <a href="http://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.2.1">HTTP/1.1 documentation</a>}.
-         */
-		/**
-		 * Apigee Development environment
-		 */
-		DEV,
-		
-		/**
-		 * Apigee Test (synonymous with QA) environment
-		 */
-		TEST,
-		
-		/**
-		 * Convenience value for people who might be more comfortable with the name QA.
-		 */
-		QA,
-		
-		/**
-		 * Apigee Production environment.
-		 */
-		PROD;
-
-		public String toString() {
-			switch (this) {
-			case DEV:
-				return "dev";
-			case TEST:
-				return "test";
-			case QA:
-				return "test";
-			case PROD:
-				return "prod";
-			}
-
-			return null;
-		}
-	}
 
 	public static class ConsumerBuilder {
 		
@@ -205,25 +166,9 @@ public class AMQConsumer {
 	private AMQConsumer() {
 
 	}
-
-	private void setAPIKey(String apikey) {
-		this.apikey = apikey;
-	}
-	
-	private void setTopic(String topic) {
-		this.topic = topic;
-	}
-	
-	private void setEnv(Environment env) {
-		this.env = env;
-	}
 	
 	private void setAccept(MediaType accept) {
 		this.accept = accept;
-	}
-	
-	private void setMaxAttempts(int maxAttempts) {
-		this.maxFailures = maxAttempts;
 	}
 	
 	private void setMaxMessages(int maxMessages) {
@@ -283,6 +228,9 @@ public class AMQConsumer {
 
 		// Apigee API key used for authentication on Apigee
 		getRequest.addHeader("apikey", apikey);
+		
+		// Apigee API key used for authentication on Apigee
+		getRequest.addHeader("x-amq-library", "AMQLibraryv1");
 
 		// Exit condition for the loop. We should exit if the call is successful, or if we hit the maximum number of retries
 		boolean done = false;
@@ -488,32 +436,32 @@ public class AMQConsumer {
 			do {
 				try {
 					// Call the service
-					HttpResponse getResponse = httpClient.execute(postRequest);
+					HttpResponse postResponse = httpClient.execute(postRequest);
 
 					//Set the status code.  If we retry for some reason this will get overwritten
-					ackResult.setStatusCode(getResponse.getStatusLine().getStatusCode());
+					ackResult.setStatusCode(postResponse.getStatusLine().getStatusCode());
 
 					// Check to make sure we received a response in the 200 Family
-					if (Family.familyOf(getResponse.getStatusLine().getStatusCode()) == Response.Status.Family.SUCCESSFUL) {
+					if (Family.familyOf(postResponse.getStatusLine().getStatusCode()) == Response.Status.Family.SUCCESSFUL) {
 						failureCount = 0;
 						done = true;
 						ackResult.setSuccess(true);
 					}
 					// Special status message to indicate the message is no longer there
-					else if (getResponse.getStatusLine().getStatusCode() == Response.Status.GONE.getStatusCode()) {
+					else if (postResponse.getStatusLine().getStatusCode() == Response.Status.GONE.getStatusCode()) {
 						failureCount = 0;
 						done = true;
 						ackResult.setSuccess(true);
 					}
 					// This will capture all the 500-level Server Error Status Codes.
-					else if (Family.familyOf(getResponse.getStatusLine().getStatusCode()) == Response.Status.Family.SERVER_ERROR) {
+					else if (Family.familyOf(postResponse.getStatusLine().getStatusCode()) == Response.Status.Family.SERVER_ERROR) {
 						//Increment the failure counter.  Once we hit the retry limit we will want to break from the loop regardless
 						//of whether the calls were successful or not.
 						failureCount++;
 
 						//Retrieve the Response Body (if any) and log the body and status code
-						String responseBody = EntityUtils.toString(getResponse.getEntity());
-						logger.debug("Status Code: {}, Response Body: {}", getResponse.getStatusLine().getStatusCode(), responseBody);
+						String responseBody = EntityUtils.toString(postResponse.getEntity());
+						logger.debug("Status Code: {}, Response Body: {}", postResponse.getStatusLine().getStatusCode(), responseBody);
 
 						//If we have reached the max number of retries we should log that and set the flag to true so we will break 
 						if (failureCount >= maxFailures) {
@@ -531,8 +479,8 @@ public class AMQConsumer {
 					}
 					// There was an unexpected result that should be handled in some way depending on your use case
 					else {
-						String responseBody = EntityUtils.toString(getResponse.getEntity());
-						logger.debug("Status Code: {}, Response Body: {}", getResponse.getStatusLine().getStatusCode(), responseBody);
+						String responseBody = EntityUtils.toString(postResponse.getEntity());
+						logger.debug("Status Code: {}, Response Body: {}", postResponse.getStatusLine().getStatusCode(), responseBody);
 
 						done = true;
 						ackResult.setSuccess(false);
@@ -579,7 +527,7 @@ public class AMQConsumer {
 	 * @throws InterruptedException
 	 */
 	protected AcknowledgeResult acknowledgeMessage(String messageId, boolean fastForward) throws InterruptedException {
-		AcknowledgeResult ackResult = new AcknowledgeResult();
+		AcknowledgeResult acknowledgeResult = new AcknowledgeResult();
 
 		// Create the POST that will be sent to the server
 		HttpDelete deleteRequest = new HttpDelete(buildDeleteURL(messageId, fastForward));
@@ -594,39 +542,39 @@ public class AMQConsumer {
 		do {
 			try {
 				// Call the service
-				HttpResponse getResponse = httpClient.execute(deleteRequest);
+				HttpResponse deleteResponse = httpClient.execute(deleteRequest);
 
 				//Set the status code.  If we retry for some reason this will get overwritten
-				ackResult.setStatusCode(getResponse.getStatusLine().getStatusCode());
+				acknowledgeResult.setStatusCode(deleteResponse.getStatusLine().getStatusCode());
 
 				// Check to make sure we received a response in the 200 Family
-				if (Family.familyOf(getResponse.getStatusLine().getStatusCode()) == Response.Status.Family.SUCCESSFUL) {
+				if (Family.familyOf(deleteResponse.getStatusLine().getStatusCode()) == Response.Status.Family.SUCCESSFUL) {
 					failureCount = 0;
 					done = true;
-					ackResult.setSuccess(true);
+					acknowledgeResult.setSuccess(true);
 				}
 				// Special status message to indicate the message is no longer there
-				else if (getResponse.getStatusLine().getStatusCode() == Response.Status.GONE.getStatusCode()) {
+				else if (deleteResponse.getStatusLine().getStatusCode() == Response.Status.GONE.getStatusCode()) {
 					failureCount = 0;
 					done = true;
-					ackResult.setSuccess(true);
+					acknowledgeResult.setSuccess(true);
 				}
 				// This will capture all the 500-level Server Error Status Codes.
-				else if (Family.familyOf(getResponse.getStatusLine().getStatusCode()) == Response.Status.Family.SERVER_ERROR) {
+				else if (Family.familyOf(deleteResponse.getStatusLine().getStatusCode()) == Response.Status.Family.SERVER_ERROR) {
 					//Increment the failure counter.  Once we hit the retry limit we will want to break from the loop regardless
 					//of whether the calls were successful or not.
 					failureCount++;
 
 					//Retrieve the Response Body (if any) and log the body and status code
-					String responseBody = EntityUtils.toString(getResponse.getEntity());
-					logger.debug("Status Code: {}, Response Body: {}", getResponse.getStatusLine().getStatusCode(), responseBody);
+					String responseBody = EntityUtils.toString(deleteResponse.getEntity());
+					logger.debug("Status Code: {}, Response Body: {}", deleteResponse.getStatusLine().getStatusCode(), responseBody);
 
 					//If we have reached the max number of retries we should log that and set the flag to true so we will break 
 					if (failureCount >= maxFailures) {
 						logger.debug("Too many errors, quiting.");
 
 						done = true;
-						ackResult.setSuccess(false);
+						acknowledgeResult.setSuccess(false);
 					}
 					//Otherwise pause the application for a the SLEEP_DURATION to provide time for things to recover before trying again.
 					else {
@@ -637,11 +585,11 @@ public class AMQConsumer {
 				}
 				// There was an unexpected result that should be handled in some way depending on your use case
 				else {
-					String responseBody = EntityUtils.toString(getResponse.getEntity());
-					logger.debug("Status Code: {}, Response Body: {}", getResponse.getStatusLine().getStatusCode(), responseBody);
+					String responseBody = EntityUtils.toString(deleteResponse.getEntity());
+					logger.debug("Status Code: {}, Response Body: {}", deleteResponse.getStatusLine().getStatusCode(), responseBody);
 
 					done = true;
-					ackResult.setSuccess(false);
+					acknowledgeResult.setSuccess(false);
 				}
 			}
 			catch(Exception e) {
@@ -657,7 +605,7 @@ public class AMQConsumer {
 					logger.debug("Too many errors, quiting.");
 
 					done = true;
-					ackResult.setSuccess(false);
+					acknowledgeResult.setSuccess(false);
 				}
 				//Otherwise pause the application for a the SLEEP_DURATION to provide time for things to recover before trying again.
 				else {
@@ -668,13 +616,13 @@ public class AMQConsumer {
 			}
 		} while (!done);
 
-		return ackResult;
+		return acknowledgeResult;
 	}
 
-	public AcknowledgeResult write(String message, ContentType contentType) throws InterruptedException, IllegalStateException, UnsupportedEncodingException {
+	public WriteResult writeToQueue(String message, ContentType contentType) throws InterruptedException, IllegalStateException, UnsupportedEncodingException {
 	
 		if(message != null && message.trim().length() > 0) {
-			AcknowledgeResult ackResult = new AcknowledgeResult();
+			WriteResult writeResult = new WriteResult();
 	
 			// Create the POST that will be sent to the server
 			HttpPost postRequest = new HttpPost(buildWriteURL());
@@ -692,39 +640,33 @@ public class AMQConsumer {
 			do {
 				try {
 					// Call the service
-					HttpResponse getResponse = httpClient.execute(postRequest);
+					HttpResponse postResponse = httpClient.execute(postRequest);
 	
 					//Set the status code.  If we retry for some reason this will get overwritten
-					ackResult.setStatusCode(getResponse.getStatusLine().getStatusCode());
+					writeResult.setStatusCode(postResponse.getStatusLine().getStatusCode());
 	
 					// Check to make sure we received a response in the 200 Family
-					if (Family.familyOf(getResponse.getStatusLine().getStatusCode()) == Response.Status.Family.SUCCESSFUL) {
+					if (Family.familyOf(postResponse.getStatusLine().getStatusCode()) == Response.Status.Family.SUCCESSFUL) {
 						failureCount = 0;
 						done = true;
-						ackResult.setSuccess(true);
-					}
-					// Special status message to indicate the message is no longer there
-					else if (getResponse.getStatusLine().getStatusCode() == Response.Status.GONE.getStatusCode()) {
-						failureCount = 0;
-						done = true;
-						ackResult.setSuccess(true);
+						writeResult.setSuccess(true);
 					}
 					// This will capture all the 500-level Server Error Status Codes.
-					else if (Family.familyOf(getResponse.getStatusLine().getStatusCode()) == Response.Status.Family.SERVER_ERROR) {
+					else if (Family.familyOf(postResponse.getStatusLine().getStatusCode()) == Response.Status.Family.SERVER_ERROR) {
 						//Increment the failure counter.  Once we hit the retry limit we will want to break from the loop regardless
 						//of whether the calls were successful or not.
 						failureCount++;
 	
 						//Retrieve the Response Body (if any) and log the body and status code
-						String responseBody = EntityUtils.toString(getResponse.getEntity());
-						logger.debug("Status Code: {}, Response Body: {}", getResponse.getStatusLine().getStatusCode(), responseBody);
+						String responseBody = EntityUtils.toString(postResponse.getEntity());
+						logger.debug("Status Code: {}, Response Body: {}", postResponse.getStatusLine().getStatusCode(), responseBody);
 	
 						//If we have reached the max number of retries we should log that and set the flag to true so we will break 
 						if (failureCount >= maxFailures) {
 							logger.debug("Too many errors, quiting.");
 	
 							done = true;
-							ackResult.setSuccess(false);
+							writeResult.setSuccess(false);
 						}
 						//Otherwise pause the application for a the SLEEP_DURATION to provide time for things to recover before trying again.
 						else {
@@ -735,11 +677,11 @@ public class AMQConsumer {
 					}
 					// There was an unexpected result that should be handled in some way depending on your use case
 					else {
-						String responseBody = EntityUtils.toString(getResponse.getEntity());
-						logger.debug("Status Code: {}, Response Body: {}", getResponse.getStatusLine().getStatusCode(), responseBody);
+						String responseBody = EntityUtils.toString(postResponse.getEntity());
+						logger.debug("Status Code: {}, Response Body: {}", postResponse.getStatusLine().getStatusCode(), responseBody);
 	
 						done = true;
-						ackResult.setSuccess(false);
+						writeResult.setSuccess(false);
 					}
 				}
 				catch(Exception e) {
@@ -755,7 +697,7 @@ public class AMQConsumer {
 						logger.debug("Too many errors, quiting.");
 	
 						done = true;
-						ackResult.setSuccess(false);
+						writeResult.setSuccess(false);
 					}
 					//Otherwise pause the application for a the SLEEP_DURATION to provide time for things to recover before trying again.
 					else {
@@ -766,10 +708,10 @@ public class AMQConsumer {
 				}
 			} while (!done);
 	
-			if(ackResult.isSuccess()) {
+			if(writeResult.isSuccess()) {
 				messageId = null;
 			}
-			return ackResult;
+			return writeResult;
 		}
 		else {
 			throw new IllegalStateException("Message cannot be null or blank.");
