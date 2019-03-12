@@ -24,8 +24,6 @@ import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.util.EntityUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -40,8 +38,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 public class AMQConsumer extends AMQClient {
 
 	private static final int NO_MESSAGE_STATUS_CODE = Status.NO_CONTENT.getStatusCode();
-	private static final int DEFAULT_MAX_FAILURE_COUNT = 10;
-	private static final long DEFAULT_SLEEP_DURATION = 1000;
 	private static final boolean DEFAULT_INCLUDE_METADATA = true;
 	private static final boolean DEFAULT_AUTO_ACKNOWLEDGE = false;
 	private static final int DEFAULT_MAX_MESSAGES = 1;
@@ -50,18 +46,10 @@ public class AMQConsumer extends AMQClient {
 	private static final String APIGEE_MOVE_URL_PATTERN = "https://northwestern-{0}.apigee.net/v1/event-hub/queue/{1}/message/{2}/DLQ/{3}";
 	private static final String APIGEE_WRITE_URL_PATTERN = "https://northwestern-{0}.apigee.net/v1/event-hub/queue/{1}";
 
-	protected static final Logger logger = LoggerFactory.getLogger("logger");
-
-	private String apikey;
-	private String topic;
-	private Environment env;
-
 	private int maxMessages = DEFAULT_MAX_MESSAGES;
 	private MediaType accept = MediaType.APPLICATION_JSON_TYPE;
 	private boolean includeMetaData = DEFAULT_INCLUDE_METADATA;
 	private boolean autoAcknowledge = DEFAULT_AUTO_ACKNOWLEDGE;
-	private int maxFailures = DEFAULT_MAX_FAILURE_COUNT;
-	private long sleepDuration = DEFAULT_SLEEP_DURATION;
 	private HttpClient httpClient = null;
 	
 	private String messageId = null;
