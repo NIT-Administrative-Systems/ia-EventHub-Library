@@ -1,26 +1,6 @@
 # EventHub Java Library
 
-## Installing via Maven [![JitPack](https://jitpack.io/v/NIT-Administrative-Systems/ia-EventHub-Library.svg)](https://jitpack.io/p/NIT-Administrative-Systems/ia-EventHub-Library)
-You can install this library with Maven: In your `pom.xml`, add a new repository:
+## Installation [![JitPack](https://jitpack.io/v/NIT-Administrative-Systems/ia-EventHub-Library.svg)](https://jitpack.io/p/NIT-Administrative-Systems/ia-EventHub-Library)
+You can install this library with Maven/gradle via to the JitPack repository. For instructions on what to add to your `pom.xml` or `build.gradle` files, check out [the JitPack package page](https://jitpack.io/p/NIT-Administrative-Systems/ia-EventHub-Library).
 
-```xml
-<!-- JitPack is a clever proxy for GitHub that builds packages and serves them in a Maven-friendly format -->
-<repositories>
-    <repository>
-      <id>jitpack.io</id>
-      <url>https://jitpack.io</url>
-    </repository>
-</repositories>
-```
-
-And then add the EventHub lib to your `pom.xml` file's `<dependencies>` section:
-
-```xml
-<dependency>
-  <groupId>com.github.NIT-Administrative-Systems</groupId>
-  <artifactId>ia-EventHub-Library</artifactId>
-  <version>1.0.1</version>
-</dependency>
-```
-
-Instructions for other Maven-compatible build systems can be found on the [JitPack page](https://jitpack.io/p/NIT-Administrative-Systems/ia-EventHub-Library).
+A pre-built jar file can be found on the GitHub [releases page](https://github.com/NIT-Administrative-Systems/ia-EventHub-Library/releases).
