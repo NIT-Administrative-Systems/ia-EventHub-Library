@@ -19,7 +19,7 @@ And then add the EventHub lib to your `pom.xml` file's `<dependencies>` section:
 <dependency>
   <groupId>com.github.NIT-Administrative-Systems</groupId>
   <artifactId>ia-EventHub-Library</artifactId>
-  <version>1.0</version>
+  <version>1.0.1</version>
 </dependency>
 ```
 
