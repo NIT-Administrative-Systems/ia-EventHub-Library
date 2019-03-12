@@ -13,6 +13,7 @@ public class AMQClient {
 	protected String topic;
 	protected Environment env;
 	protected int maxFailures = DEFAULT_MAX_FAILURE_COUNT;
+	protected long sleepDuration = DEFAULT_SLEEP_DURATION;
 
 	public enum Environment {
 	       /**

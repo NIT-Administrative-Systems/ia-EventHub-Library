@@ -27,7 +27,6 @@ public class AMQPublisher extends AMQClient {
 	private static final String APIGEE_WRITE_TO_TOPIC_URL_PATTERN = "https://northwestern-{0}.apigee.net/v1/event-hub/topic/{1}";
 
 	private MediaType contentType = null;
-	private long sleepDuration = DEFAULT_SLEEP_DURATION;
 	private HttpClient httpClient = null;
 	
 	public static class PublisherBuilder {
