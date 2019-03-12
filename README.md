@@ -1,6 +1,6 @@
 # EventHub Java Library
 
-## Installing via Maven
+## Installing via Maven [![JitPack](https://jitpack.io/v/NIT-Administrative-Systems/ia-EventHub-Library.svg)](https://jitpack.io/p/NIT-Administrative-Systems/ia-EventHub-Library)
 You can install this library with Maven: In your `pom.xml`, add a new repository:
 
 ```xml
@@ -22,3 +22,5 @@ And then add the EventHub lib to your `pom.xml` file's `<dependencies>` section:
   <version>1.0</version>
 </dependency>
 ```
+
+Instructions for other Maven-compatible build systems can be found on the [JitPack page](https://jitpack.io/p/NIT-Administrative-Systems/ia-EventHub-Library).
