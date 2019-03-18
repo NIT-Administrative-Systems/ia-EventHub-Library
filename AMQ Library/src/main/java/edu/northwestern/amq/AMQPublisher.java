@@ -115,7 +115,7 @@ public class AMQPublisher extends AMQClient {
 	}
 
 	public WriteResult writeToTopic(String message) throws InterruptedException, IllegalStateException, UnsupportedEncodingException {
-		
+
 		if(message != null && message.trim().length() > 0) {
 			WriteResult writeResult = new WriteResult();
 
