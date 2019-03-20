@@ -51,6 +51,29 @@ public class AMQPublisherTest {
 		}
 	}
 
+	@Test
+	public void unauthorized() {
+		try {
+			AMQPublisher failurePublisher = AMQPublisher.PublisherBuilder
+				.create()
+				.setEnv(env)
+				.setTopic("faketopic")
+				.setAPIKey(apiKey)
+				.setContentType(MediaType.APPLICATION_JSON_TYPE)
+				.build();
+
+			WriteResult writeResult = failurePublisher.writeToTopic(testMessage);
+
+
+			Assert.assertFalse("WriteResult should NOT be successful: " + writeResult.getStatusCode(), writeResult.isSuccess());
+		}
+		catch(Exception e) {
+			System.out.println("Error");
+			e.printStackTrace(System.out);
+			Assert.fail(e.getMessage());
+		}
+	}
+	
 	@Test(expected = IllegalArgumentException.class)
 	public void noContentType() {
 		AMQPublisher.PublisherBuilder
